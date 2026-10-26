@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maflow · Observatorio Boryszew</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body data-running="{{ 'true' if running else 'false' }}">
+<header><a class="brand" href="{{ url_for('index') }}"><img class="brand-logo" src="{{ url_for('static', filename='maflow-logo.jpg') }}" alt="Maflow, miembro de Boryszew"><span class="brand-sub">OBSERVATORIO<br>GRUPO BORYSZEW</span></a><nav aria-label="Navegación principal"><a href="#panel" class="nav-active">Panel de noticias</a><a href="#historial">Historial</a><a href="#programacion">Programación</a></nav><span class="header-tag">ES <span aria-hidden="true">/</span> INFORMES EN ESPAÑOL</span></header>
+<main>
+  <section class="intro" id="panel"><div><p class="eyebrow"><span class="eyebrow-line"></span> OBSERVATORIO DE NOTICIAS</p><h1>El grupo, al día.</h1><p class="subtitle">Tu radar de actualidad de Boryszew y Maflow.<br>Investiga, consulta y comparte. Todo en español.</p></div>
+    <form method="post" action="{{ url_for('generate') }}"><input type="hidden" name="csrf" value="{{ session.csrf }}"><button class="primary" {% if running %}disabled{% endif %}>{{ 'Investigando…' if running else '＋ Generar informe' }}</button></form>
+  </section>
+  {% for message in get_flashed_messages() %}<div class="notice" role="status">{{ message }}</div>{% endfor %}
+  {% if not configured %}<div class="notice warning"><div><strong>Conecta la IA para generar resúmenes en español.</strong><span>El panel está disponible; falta configurar el proveedor de redacción.</span></div><a href="#conexion">Ver cómo conectar →</a></div>{% endif %}
+  {% if running %}<div class="notice" role="status">Consultando fuentes y preparando el informe. Esta página se actualizará automáticamente.</div>{% endif %}
+  <section class="metrics" aria-label="Resumen del observatorio"><div><span class="metric-icon" aria-hidden="true">◷</span><div><span class="metric-label">VENTANA DE INVESTIGACIÓN</span><strong>Últimas 24 horas</strong></div></div><div><span class="metric-icon" aria-hidden="true">▤</span><div><span class="metric-label">CANALES CONFIGURADOS</span><strong>{{ source_count }} consultas RSS</strong></div></div><div><span class="metric-icon" aria-hidden="true">◴</span><div><span class="metric-label">INFORME DIARIO</span><strong>{{ settings.time if settings.enabled else 'En pausa' }} <small>{{ settings.timezone if settings.enabled else 'Programación desactivada' }}</small></strong></div></div></section>
+  <div class="layout">
+    <section class="report-panel">
+      <div class="section-bar"><h2>Informe del día</h2><span class="pill">ÚLTIMAS 24 HORAS</span></div>
+      {% if selected and selected.status == 'complete' %}
+      {% set report = selected.report %}
+      <div class="report-heading"><div><p class="eyebrow">{{ selected.created|localdate }}</p><h3>Actualidad del grupo Boryszew</h3><p class="muted">{{ report.articles|length }} noticias · Informe en español</p></div></div>
+      <div class="actions"><a class="primary" href="{{ url_for('pdf', run_id=selected.id, download=1) }}">↓ Descargar PDF</a><a class="secondary" target="_blank" rel="noopener" href="{{ url_for('pdf', run_id=selected.id) }}">Visualizar PDF ↗</a></div>
+      <div class="overview"><h4>Resumen del día</h4><p>{{ report.overview }}</p></div>
+      <p class="muted small">Periodo: {{ report.since|localdate }} — {{ report.until|localdate }} ({{ settings.timezone }})</p>
+      {% if report.omitted %}<p class="notice warning">Se muestran las 25 noticias más recientes. {{ report.omitted }} resultados adicionales no incluidos.</p>{% endif %}
+      {% for article in report.articles %}
+      <article class="news-item"><div class="news-meta"><span>{{ article.source }}</span><span>{{ article.published|localdate }}</span></div><h3>{{ article.title_es }}</h3><p>{{ article.summary_es }}</p><a class="source-link" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">Consultar fuente ↗</a><details><summary>Titular original y canal</summary><p>{{ article.title }}</p><p class="muted">{{ article.channel }}</p></details></article>
+      {% endfor %}
+      <section class="coverage"><h4>Cobertura de las fuentes</h4>{% for source in report.coverage %}<div><span class="{{ 'ok' if source.ok else 'error' }}">{{ '✓' if source.ok else '!' }}</span> {{ source.name }}<span class="muted">{{ source.count }} resultados · {{ source.message }}</span></div>{% endfor %}</section>
+      {% elif selected and selected.status == 'failed' %}
+      <div class="empty"><p class="eyebrow">INVESTIGACIÓN NO COMPLETADA</p><h3>No se ha podido generar el informe.</h3><p>{{ selected.error }}</p>{% if selected.report %}{% for source in selected.report.coverage %}<p>{{ source.name }}: {{ source.message }}</p>{% endfor %}{% endif %}<p class="muted">Puedes volver a intentarlo con «Generar informe» tras corregir la configuración.</p></div>
+      {% else %}
+      <div class="empty"><div class="document-icon" aria-hidden="true">▤<span>＋</span></div><p class="eyebrow">TODO EMPIEZA CON UNA BÚSQUEDA</p><h3>Tu próximo informe<br>empieza aquí.</h3><p>Reúne las noticias de las últimas 24 horas en un informe con resúmenes, enlaces y PDF descargable.</p><form method="post" action="{{ url_for('generate') }}"><input type="hidden" name="csrf" value="{{ session.csrf }}"><button class="primary" {% if running %}disabled{% endif %}>{{ 'Investigando…' if running else 'Generar mi primer informe →' }}</button></form><p class="muted small">También puedes dejar que se genere automáticamente cada día.</p></div>
+      {% endif %}
+    </section>
+    <aside>
+      <section class="card" id="programacion"><div class="section-bar"><h2>Programación diaria</h2><span class="status-dot {{ 'active' if settings.enabled else '' }}"></span></div><p class="muted">La actualidad, lista cuando la necesitas.</p>
+      <form method="post" action="{{ url_for('settings') }}"><input type="hidden" name="csrf" value="{{ session.csrf }}"><label class="toggle"><input type="checkbox" name="enabled" {% if settings.enabled %}checked{% endif %}> Activar informe automático</label><label for="time">Hora del informe</label><input id="time" name="time" type="time" value="{{ settings.time }}" required><label for="timezone">Zona horaria</label><select id="timezone" name="timezone">{% for zone in ['Europe/Madrid','Atlantic/Canary','America/Mexico_City','America/Bogota','America/Argentina/Buenos_Aires','UTC'] %}<option {% if zone == settings.timezone %}selected{% endif %}>{{ zone }}</option>{% endfor %}{% if settings.timezone not in ['Europe/Madrid','Atlantic/Canary','America/Mexico_City','America/Bogota','America/Argentina/Buenos_Aires','UTC'] %}<option selected>{{ settings.timezone }}</option>{% endif %}</select><button class="secondary full">Guardar programación</button></form><p class="small muted">La aplicación debe permanecer encendida. Si se reinicia después de la hora prevista, realizará la consulta pendiente de hoy. No recupera días anteriores.</p></section>
+      <section class="card" id="historial"><h2>Historial de informes</h2>{% for run in history %}<a class="history-item" href="{{ url_for('index', report=run.id) }}"><span>{{ run.created|localdate }}<small>{{ run.trigger }}</small></span><span class="badge {{ run.status }}">{{ {'complete':'Listo','failed':'Error','running':'En curso'}[run.status] }}</span></a>{% else %}<div class="history-empty"><span aria-hidden="true">◷</span><p>Aquí guardarás tu actualidad.</p><p class="small muted">Tus informes aparecerán después de la primera investigación.</p></div>{% endfor %}</section>
+      <section class="card connection" id="conexion"><div class="section-bar"><h2>Conexión de IA</h2><span class="badge {{ 'complete' if configured else 'failed' }}">{{ 'Clave configurada' if configured else 'Pendiente' }}</span></div><p class="muted">Traducción y resúmenes en español.</p>
+      {% if environment_key %}<p class="small">La clave está configurada en el entorno.</p>
+      {% else %}<form method="post" action="{{ url_for('connection') }}"><input type="hidden" name="csrf" value="{{ session.csrf }}"><label for="api-key">{{ 'Sustituir clave de OpenAI' if configured else 'Clave de API de OpenAI' }}</label><input id="api-key" name="api_key" type="password" autocomplete="off" minlength="20" maxlength="512" placeholder="Introduce tu clave" required><button class="secondary full">{{ 'Actualizar conexión' if configured else 'Guardar conexión' }}</button></form>
+      {% if configured %}<form method="post" action="{{ url_for('connection') }}"><input type="hidden" name="csrf" value="{{ session.csrf }}"><button class="text-button" name="remove" value="1">Eliminar clave de este ordenador</button></form>{% endif %}{% endif %}
+      <p class="small muted">La API de OpenAI puede tener coste según tu cuenta. Nunca compartas tu clave en el chat.</p><details><summary>Cómo se guarda la conexión</summary><p>La clave local se guarda en un archivo de la carpeta de datos, fuera de Git y del paquete descargable. En Linux y macOS tiene permisos de lectura y escritura para tu usuario; en Windows se aplican los permisos de la carpeta. No se cifra en disco: usa esta opción solo en un ordenador de confianza. También puedes configurar NEWS_LLM_API_KEY en el entorno en lugar de guardarla aquí.</p><p>Guardar una clave no verifica su validez. Se utilizará al redactar el siguiente informe con noticias. Se necesita salida HTTPS a Google News y OpenAI.</p></details></section>
+      <section class="scope"><p class="eyebrow">SOBRE LAS FUENTES</p><p>{{ limitation }}</p><p>Incluye prensa internacional, prensa polaca, comunicaciones oficiales indexadas y búsqueda de LinkedIn público. La ausencia de resultados no garantiza que no haya publicaciones.</p></section>
+    </aside>
+  </div>
+</main><footer><strong>MAFLOW / GRUPO BORYSZEW</strong><span>Identidad visual basada en maflow.com</span><span>Observatorio de fuentes públicas · Español</span></footer>
+</body></html>

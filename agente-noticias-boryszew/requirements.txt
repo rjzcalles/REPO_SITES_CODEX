@@ -1,0 +1,8 @@
+Flask==3.1.2
+requests==2.32.5
+beautifulsoup4==4.14.3
+reportlab==4.4.10
+
+waitress==3.0.2
+filelock==3.20.0
+tzdata==2025.2

@@ -1,0 +1,26 @@
+OBSERVATORIO DE NOTICIAS BORYSZEW / MAFLOW
+
+1. Extrae todo el ZIP en una carpeta de tu ordenador.
+2. Necesitas Python 3.12 o posterior (https://www.python.org/downloads/).
+3. Windows: abre iniciar.bat.
+   macOS/Linux: abre una terminal en la carpeta y ejecuta bash iniciar.command.
+4. El lanzador prepara las dependencias y abre tu navegador.
+5. En el panel, ve a Conexion de IA e introduce tu clave de API de OpenAI.
+   No compartas la clave en el chat. La API puede tener coste segun tu cuenta.
+6. Pulsa Generar informe. Desde el resultado puedes visualizar y descargar el PDF.
+
+El informe automatico esta configurado a las 08:00, hora de Madrid.
+El ordenador y la aplicacion deben permanecer encendidos a esa hora.
+Manten la ventana del lanzador abierta. Para cerrar, pulsa Ctrl+C en esa ventana.
+
+Si no hay noticias verificables en las ultimas 24 horas, el informe lo indicara.
+LinkedIn solo se cubre mediante publicaciones publicas indexadas; no se garantiza
+que todas sus publicaciones aparezcan en los resultados.
+
+La clave local se guarda sin cifrar en data/llm.key; usa un ordenador de confianza.
+Puedes borrarla desde Conexion de IA. Los datos y la clave no se incluyen en el ZIP.
+
+Aplicacion y lanzador comprobados en Linux. Los accesos de Windows y macOS
+estan incluidos pero no se han ejecutado en esos sistemas.
+
+Mas informacion en README.md. Procedencia de la paleta y logo en docs/identidad-visual.md.
